@@ -49,7 +49,8 @@ def getSingleMetric(aPrediction, aTargetImage):
     """Get single value of chosen metric"""
     target_image = aTargetImage;
     obj_list = [];
-    down_scale = int(args.downscale);
+    down_scale = int(
+    );
 
     for s in range(len(aPrediction[:, 0])):
 
@@ -164,6 +165,11 @@ def runCMAES():
     target_image = getTargetImage(args.target_image);
     # save results
     saveImageAndCSV(full_path, target_image, res.X, res.F, single_metric, total_time, int(args.downscale));
+    
+    global pop_size, nb_generations, runtime;
+    pop_size.append(???);
+    nb_generations.append(???);
+    runtime.append(total_time);
 
 def runNSGA2(aPopulation, aGeneration):
     """NSGA-II algorithm"""
@@ -189,6 +195,11 @@ def runNSGA2(aPopulation, aGeneration):
 
     end = time.time();
     total_time = end-start;
+
+    global pop_size, nb_generations, runtime;
+    pop_size.append(pop_size);
+    nb_generations.append(n_gen);
+    runtime.append(total_time);
 
     # save results
     saveMultipleImageAndCSV(full_path, target_image, res.X, res.F, total_time, int(args.downscale));
@@ -223,7 +234,29 @@ setXRayEnvironment();
 
 np.random.seed();
 
-if args.algorithm == "CMAES":
-    runCMAES();
-elif args.algorithm == "NSGA2":
-    runNSGA2(args.pop_size, args.gen_size);
+pop_size = [];
+nb_generations = [];
+runtime = [];
+
+current_pop_size = int(args.pop_size);
+current_n_gen = int(args.gen_size);
+
+for loop resolution:
+    
+    if args.algorithm == "CMAES":
+        runCMAES();
+    elif args.algorithm == "NSGA2":
+        runNSGA2(args.pop_size, args.gen_size);
+
+    current_pop_size *= 2;
+    current_n_gen *= 2;
+    
+print(args.metrics, ',', 
+     args.target_image, ',',
+     args.algorithm, ',',
+     int(args.downscale), ',',
+     pop_size, ',',
+     nb_generations, ',',
+     runtime, ',',
+     parameters, ',',
+     ZNCC, ...);
