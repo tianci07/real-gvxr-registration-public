@@ -10,7 +10,7 @@ do
 				  --metrics "$m"\
 				  --downscale "$d"\
 				  --pop_size 200\
-				  --gen_size 200;
+				  --gen_size 200 > results-metrics$m-downscale$d-run$i.out 2> results-metrics$m-downscale$d-run$i.err
 		done
 	done
 done
