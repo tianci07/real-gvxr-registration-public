@@ -1,5 +1,7 @@
 echo "metrics,target_image,algorithm,downscale,pop_size,nb_generations,runtime_sec,ZNCC,SSIM,MI,GC,MAE,CS,SSD,GD" > ./results/results.csv
 
+MPLBACKEND="Agg";
+
 for m in {ZNCC,SSIM,MI,GC,MAE,CS,SSD,GD};
 do
 	for i in {1..3};
