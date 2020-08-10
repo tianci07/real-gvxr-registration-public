@@ -29,7 +29,7 @@ metric_lists = {
     "GD": gd
 }
 
-def getTargetImage(aTarget):
+def getTargetImage(aTarget, downscale):
     """Get a ground truth image"""
 
     # read target image
@@ -42,6 +42,11 @@ def getTargetImage(aTarget):
     target_image[np.isnan(target_image)]=0.;
     target_image[target_image > 1E308] = 0.;
     target_image=np.float32(target_image);
+
+    if down_scale != 0:
+        # image pyramids - down scale
+        for p in range(down_scale):
+            target_image = cv2.pyrDown(target_image);
 
     return target_image
 
@@ -75,13 +80,6 @@ def getAllMetrics(aPrediction):
     for s in range(len(aPrediction[:, 0])):
 
         pred_image = computePredictedImage(aPrediction[s, :]);
-        target_image = target;
-
-        if down_scale != 0:
-            # image pyramids - down scale
-            for p in range(down_scale):
-                pred_image = cv2.pyrDown(pred_image);
-                target_image = cv2.pyrDown(target);
 
         for key in metric_lists:
             obj_value = metric_lists[key](target_image, pred_image);
@@ -109,8 +107,11 @@ class objectiveFunction(Problem):
     def _evaluate(self, x, out, *args, **kwargs):
 
         objective = getSingleMetric(x);
+                    
         out["F"] = np.array(objective);
+        print("FITNESS", np.min(out["F"]));
 
+        
 class multiObjectiveFunction(Problem):
     """Hand Registration with multiple objective functions.
     Check performance of optimisation using multiple metrics together.
@@ -225,7 +226,7 @@ global target
 target = getTargetImage(args.target_image);
 
 # set up simulation environment.
-setXRayEnvironment();
+setXRayEnvironment(downscale);
 
 np.random.seed();
 
