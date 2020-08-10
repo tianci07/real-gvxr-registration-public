@@ -45,15 +45,15 @@ def getTargetImage(aTarget):
 
     return target_image
 
-def getSingleMetric(aPrediction, aTargetImage):
+def getSingleMetric(aPrediction):
     """Get single value of chosen metric"""
-    target_image = aTargetImage;
     obj_list = [];
     down_scale = int(args.downscale);
 
     for s in range(len(aPrediction[:, 0])):
 
         pred_image = computePredictedImage(aPrediction[s, :]);
+        target_image = target;
 
         if down_scale != 0:
             # image pyramids down scale
@@ -64,16 +64,10 @@ def getSingleMetric(aPrediction, aTargetImage):
         obj_value = metric_lists[single_metric](target_image, pred_image);
         obj_list.append(obj_value);
 
-        if down_scale != 0:
-            # image pyramids revert back
-            for u in range(down_scale):
-                target_image = cv2.pyrUp(target_image);
-
     return obj_list
 
-def getAllMetrics(aPrediction, aTargetImage):
+def getAllMetrics(aPrediction):
     """Make use of all available metrics"""
-    target_image = aTargetImage;
     down_scale = int(args.downscale);
     obj_list = [];
     obj_list_temp = [];
@@ -81,23 +75,19 @@ def getAllMetrics(aPrediction, aTargetImage):
     for s in range(len(aPrediction[:, 0])):
 
         pred_image = computePredictedImage(aPrediction[s, :]);
+        target_image = target;
 
         if down_scale != 0:
             # image pyramids - down scale
             for p in range(down_scale):
                 pred_image = cv2.pyrDown(pred_image);
-                target_image = cv2.pyrDown(target_image);
+                target_image = cv2.pyrDown(target);
 
         for key in metric_lists:
             obj_value = metric_lists[key](target_image, pred_image);
             obj_list_temp.append(obj_value);
 
         obj_list.append(obj_list_temp);
-
-        if down_scale != 0:
-            # image pyramids - revert back
-            for p in range(down_scale):
-                target_image = cv2.pyrUp(target_image);
 
     return obj_list
 
@@ -118,7 +108,7 @@ class objectiveFunction(Problem):
 
     def _evaluate(self, x, out, *args, **kwargs):
 
-        objective = getSingleMetric(x, target_image);
+        objective = getSingleMetric(x);
         out["F"] = np.array(objective);
 
 class multiObjectiveFunction(Problem):
@@ -138,16 +128,24 @@ class multiObjectiveFunction(Problem):
 
     def _evaluate(self, x, out, *args, **kwargs):
 
-        out["F"] = getAllMetrics(x, target_image);
+        out["F"] = getAllMetrics(x);
 
-def runCMAES():
+def runCMAES(aPopulation, aGeneration):
     """CMA-ES algorithm"""
+
+    pop_size = int(aPopulation);
+    n_gen = int(aGeneration);
+
+    if int(args.downscale) != 0:
+        pop_size = int(pop_size/2**int(args.downscale));
+        n_gen = int(n_gen/2**int(args.downscale));
 
     # problems to be solved
     problem = objectiveFunction();
 
     # use CMA-ES
-    algorithm = CMAES(CMA_stds=0.1);
+    algorithm = CMAES(popsize=pop_size,
+                    CMA_stds=0.1);
 
     # record time
     start = time.time();
@@ -156,14 +154,21 @@ def runCMAES():
     # set up the optimiser
     res = minimize(problem,
                    algorithm,
+                   ('n_iter', n_gen),
                    verbose=True);
 
     end = time.time();
     total_time = end-start;
 
-    target_image = getTargetImage(args.target_image);
+    target_image = target;
     # save results
     saveImageAndCSV(full_path, target_image, res.X, res.F, single_metric, total_time, int(args.downscale));
+
+    global nb_pop, nb_generations, runtime, metric_value;
+    nb_pop.append(pop_size);
+    nb_generations.append(n_gen);
+    runtime.append(total_time);
+    metric_value=computeAllMetricsValue(target, res.X, int(args.downscale));
 
 def runNSGA2(aPopulation, aGeneration):
     """NSGA-II algorithm"""
@@ -215,15 +220,40 @@ full_path = args.output_folder+"/"+args.algorithm+"/"+args.metrics+"/"+args.repe
 if not os.path.exists(full_path):
     os.makedirs(full_path);
 
+global target
 # get ground truth image
-target_image = getTargetImage(args.target_image);
+target = getTargetImage(args.target_image);
 
 # set up simulation environment.
 setXRayEnvironment();
 
 np.random.seed();
 
+pop_size = [];
+nb_pop = [];
+nb_generations = [];
+runtime = [];
+
 if args.algorithm == "CMAES":
-    runCMAES();
+    runCMAES(args.pop_size, args.gen_size);
 elif args.algorithm == "NSGA2":
     runNSGA2(args.pop_size, args.gen_size);
+
+fname = "./results/metrics"+args.metrics+"-downscale"+args.downscale+"-run"+args.repeat+".out";
+with open(fname, 'w') as f:
+
+    print(args.metrics, ',',
+         args.target_image, ',',
+         args.algorithm, ',',
+         int(args.downscale), ',',
+         nb_pop, ',',
+         nb_generations, ',',
+         runtime, ',',
+         metric_value[0], ',',
+         metric_value[1], ',',
+         metric_value[2], ',',
+         metric_value[3], ',',
+         metric_value[4], ',',
+         metric_value[5], ',',
+         metric_value[6], ',',
+         metric_value[7], file=f);

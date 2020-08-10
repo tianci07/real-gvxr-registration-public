@@ -4,6 +4,7 @@ import random
 import pandas as pd
 import matplotlib.pyplot as plt
 import cv2
+from metrics import *
 
 def setXRayParameters(SOD, SDD):
     """Set up position of the X-ray source, object and the detector"""
@@ -300,6 +301,8 @@ def computePredictedImage(aPrediction):
 
     SOD = aPrediction[0]*aPrediction[1];
     SDD = aPrediction[1];
+    SOD = np.float(SOD.item());
+    SDD = np.float(SDD.item());
 
     setXRayParameters(SOD, SDD);
 
@@ -390,3 +393,24 @@ def saveMultipleImageAndCSV(aPath, aTarget, aPredition, aMetricValue, aComputedT
     df.to_csv(aPath +"/results.csv" );
 
     print("Image and csv file are saved");
+
+def computeAllMetricsValue(aTarget, aPredition, aScale):
+
+    pred_image = computePredictedImage(aPredition);
+    target_image = aTarget;
+
+    if aScale != 0:
+        for p in range(aScale):
+            pred_image = cv2.pyrDown(pred_image);
+            target_image = cv2.pyrDown(target_image);
+
+    ZNCC = -zncc(target_image, pred_image);
+    SSIM = -ssim(target_image, pred_image);
+    MI = -mi(target_image, pred_image);
+    GC = -gc(target_image, pred_image);
+    MAE = mae(target_image, pred_image);
+    CS = cs(target_image, pred_image);
+    SSD = ssd(target_image, pred_image);
+    GD = gd(target_image, pred_image);
+
+    return [ZNCC, SSIM, MI, GC, MAE, CS, SSD, GD]
