@@ -29,7 +29,7 @@ metric_lists = {
     "GD": gd
 }
 
-def getTargetImage(aTarget, downscale):
+def getTargetImage(aTarget, aScale):
     """Get a ground truth image"""
 
     # read target image
@@ -43,9 +43,9 @@ def getTargetImage(aTarget, downscale):
     target_image[target_image > 1E308] = 0.;
     target_image=np.float32(target_image);
 
-    if down_scale != 0:
+    if aScale != 0:
         # image pyramids - down scale
-        for p in range(down_scale):
+        for p in range(aScale):
             target_image = cv2.pyrDown(target_image);
 
     return target_image
@@ -59,12 +59,6 @@ def getSingleMetric(aPrediction):
 
         pred_image = computePredictedImage(aPrediction[s, :]);
         target_image = target;
-
-        if down_scale != 0:
-            # image pyramids down scale
-            for p in range(down_scale):
-                pred_image = cv2.pyrDown(pred_image);
-                target_image = cv2.pyrDown(target_image);
 
         obj_value = metric_lists[single_metric](target_image, pred_image);
         obj_list.append(obj_value);
@@ -80,6 +74,13 @@ def getAllMetrics(aPrediction):
     for s in range(len(aPrediction[:, 0])):
 
         pred_image = computePredictedImage(aPrediction[s, :]);
+        target_image = target;
+
+        if down_scale != 0:
+            # image pyramids - down scale
+            for p in range(down_scale):
+                pred_image = cv2.pyrDown(pred_image);
+                target_image = cv2.pyrDown(target);
 
         for key in metric_lists:
             obj_value = metric_lists[key](target_image, pred_image);
@@ -107,11 +108,10 @@ class objectiveFunction(Problem):
     def _evaluate(self, x, out, *args, **kwargs):
 
         objective = getSingleMetric(x);
-                    
         out["F"] = np.array(objective);
         print("FITNESS", np.min(out["F"]));
 
-        
+
 class multiObjectiveFunction(Problem):
     """Hand Registration with multiple objective functions.
     Check performance of optimisation using multiple metrics together.
@@ -131,11 +131,12 @@ class multiObjectiveFunction(Problem):
 
         out["F"] = getAllMetrics(x);
 
-def runCMAES(aPopulation, aGeneration):
+def runCMAES(aPopulation, aGeneration, anInitialGuess):
     """CMA-ES algorithm"""
 
     pop_size = int(aPopulation);
     n_gen = int(aGeneration);
+    initial_guess = strArrayToFloatArray(anInitialGuess);
 
     if int(args.downscale) != 0:
         pop_size = int(pop_size/2**int(args.downscale));
@@ -144,19 +145,24 @@ def runCMAES(aPopulation, aGeneration):
     # problems to be solved
     problem = objectiveFunction();
 
-    # use CMA-ES
-    algorithm = CMAES(popsize=pop_size,
-                    CMA_stds=0.1);
+    if int(args.downscale) == 4:
 
+        # use CMA-ES
+        algorithm = CMAES(popsize=pop_size,
+                        CMA_stds=0.1);
+    else:
+        # use CMA-ES
+        algorithm = CMAES(x0=initial_guess,
+                        popsize=pop_size,
+                        CMA_stds=0.1);
     # record time
     start = time.time();
 
-    # ('n_iter', 10),
     # set up the optimiser
     res = minimize(problem,
                    algorithm,
                    ('n_iter', n_gen),
-                   verbose=True);
+                   verbose=False);
 
     end = time.time();
     total_time = end-start;
@@ -165,11 +171,13 @@ def runCMAES(aPopulation, aGeneration):
     # save results
     saveImageAndCSV(full_path, target_image, res.X, res.F, single_metric, total_time, int(args.downscale));
 
-    global nb_pop, nb_generations, runtime, metric_value;
+    global nb_pop, nb_generations, runtime, metric_value, parameters;
     nb_pop.append(pop_size);
     nb_generations.append(n_gen);
     runtime.append(total_time);
-    metric_value=computeAllMetricsValue(target, res.X, int(args.downscale));
+    metric_value=computeAllMetricsValue(target, res.X);
+    for x in range(len(res.X)):
+        parameters.append(res.X[x]);
 
 def runNSGA2(aPopulation, aGeneration):
     """NSGA-II algorithm"""
@@ -210,6 +218,7 @@ parser.add_argument("--metrics", help="Choose single or all metrics, options=['Z
 parser.add_argument("--downscale", help="Lower the image resolution using Guassian Pyramids, eg. 0 for no scaling, 1 for 1/4 (1/2 width and 1/2 height), 2 for 1/16, so on...")
 parser.add_argument("--pop_size", default=100, help="How many individuals are required (NSGA-II)?");
 parser.add_argument("--gen_size", default=100, help="How many generations are required (NSGA-II)?");
+parser.add_argument("--initial_guess", default=100, help="Initial guess", required=True);
 
 args = parser.parse_args();
 
@@ -223,10 +232,11 @@ if not os.path.exists(full_path):
 
 global target
 # get ground truth image
-target = getTargetImage(args.target_image);
-
+target = getTargetImage(args.target_image, int(args.downscale));
+file = open(args.initial_guess, "r");
+file = file.read();
 # set up simulation environment.
-setXRayEnvironment(downscale);
+setXRayEnvironment(int(args.downscale));
 
 np.random.seed();
 
@@ -234,27 +244,33 @@ pop_size = [];
 nb_pop = [];
 nb_generations = [];
 runtime = [];
+parameters = [];
+fitness = [];
+img_width = target.shape[1];
+img_height = target.shape[0];
 
 if args.algorithm == "CMAES":
-    runCMAES(args.pop_size, args.gen_size);
+    runCMAES(args.pop_size, args.gen_size, file);
 elif args.algorithm == "NSGA2":
     runNSGA2(args.pop_size, args.gen_size);
 
-fname = "./results/metrics"+args.metrics+"-downscale"+args.downscale+"-run"+args.repeat+".out";
-with open(fname, 'w') as f:
+print("METRICS", ',',
+     args.metrics, ',',
+     args.target_image, ',',
+     args.algorithm, ',',
+     int(args.downscale), ',',
+     img_width, ',',
+     img_height, ',',
+     nb_pop[0], ',',
+     nb_generations[0], ',',
+     runtime[0], ',',
+     metric_value[0], ',',
+     metric_value[1], ',',
+     metric_value[2], ',',
+     metric_value[3], ',',
+     metric_value[4], ',',
+     metric_value[5], ',',
+     metric_value[6], ',',
+     metric_value[7]);
 
-    print(args.metrics, ',',
-         args.target_image, ',',
-         args.algorithm, ',',
-         int(args.downscale), ',',
-         nb_pop, ',',
-         nb_generations, ',',
-         runtime, ',',
-         metric_value[0], ',',
-         metric_value[1], ',',
-         metric_value[2], ',',
-         metric_value[3], ',',
-         metric_value[4], ',',
-         metric_value[5], ',',
-         metric_value[6], ',',
-         metric_value[7], file=f);
+print("PARAMS", parameters);

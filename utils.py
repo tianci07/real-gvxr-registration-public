@@ -13,7 +13,7 @@ def setXRayParameters(SOD, SDD):
     gvxr.setDetectorPosition(SOD - SDD, 0.0, 0.0, "cm");
     gvxr.usePointSource();
 
-def setXRayEnvironment():
+def setXRayEnvironment(aScale):
     """Set up initial environment for X-ray simulation"""
     gvxr.createWindow();
     gvxr.setWindowSize(512, 512);
@@ -22,8 +22,20 @@ def setXRayEnvironment():
     gvxr.setMonoChromatic(80, "keV", 1000);
 
     gvxr.setDetectorUpVector(0, 0, -1);
-    gvxr.setDetectorNumberOfPixels(768, 1024);
-    gvxr.setDetectorPixelSize(0.5, 0.5, "mm"); # 5 dpi
+
+    img_width = 768;
+    img_height = 1024;
+    pixel_size = 0.5;
+
+    if aScale != 0:
+        img_width /= 2**aScale;
+        img_height /= 2**aScale;
+        pixel_size *=2**aScale;
+
+    width = int(img_width);
+    height = int(img_height);
+    gvxr.setDetectorNumberOfPixels(width, height);
+    gvxr.setDetectorPixelSize(pixel_size, pixel_size, "mm");
 
     setXRayParameters(10.0, 100.0);
 
@@ -330,12 +342,6 @@ def saveImageAndCSV(aPath, aTarget, aPredition, aMetricValue, aMetricName, aComp
     pred_image = computePredictedImage(aPredition);
     target_image = aTarget;
 
-    if aScale != 0:
-
-        for p in range(aScale):
-            pred_image = cv2.pyrDown(pred_image);
-            target_image = cv2.pyrDown(target_image);
-
     plt.imsave(aPath +"/pred.png", pred_image, cmap='Greys_r');
     plt.imsave(aPath+"/target.png", target_image, cmap='Greys_r');
 
@@ -371,12 +377,7 @@ def saveMultipleImageAndCSV(aPath, aTarget, aPredition, aMetricValue, aComputedT
 
         target_image = aTarget;
         pred_image = computePredictedImage(aPredition[r,:]);
-
-        if aScale != 0:
-            for p in range(aScale):
-                pred_image = cv2.pyrDown(pred_image);
-                target_image = cv2.pyrDown(target_image);
-
+        
         plt.imsave(aPath +"/pred-%d.png" % r, pred_image, cmap='Greys_r');
         m = aMetricValue;
         row = [[r, aPredition[r,:], m[r,0], m[r,1], m[r,2], m[r,3], m[r,4], \
@@ -394,15 +395,10 @@ def saveMultipleImageAndCSV(aPath, aTarget, aPredition, aMetricValue, aComputedT
 
     print("Image and csv file are saved");
 
-def computeAllMetricsValue(aTarget, aPredition, aScale):
+def computeAllMetricsValue(aTarget, aPredition):
 
     pred_image = computePredictedImage(aPredition);
     target_image = aTarget;
-
-    if aScale != 0:
-        for p in range(aScale):
-            pred_image = cv2.pyrDown(pred_image);
-            target_image = cv2.pyrDown(target_image);
 
     ZNCC = -zncc(target_image, pred_image);
     SSIM = -ssim(target_image, pred_image);
@@ -414,3 +410,12 @@ def computeAllMetricsValue(aTarget, aPredition, aScale):
     GD = gd(target_image, pred_image);
 
     return [ZNCC, SSIM, MI, GC, MAE, CS, SSD, GD]
+
+def strArrayToFloatArray(aString):
+
+    s = aString.replace('PARAMS', '');
+    s = s.replace('[', '');
+    s = s.replace(']', '');
+    to_float = np.fromstring(s, dtype=float, sep=",")
+
+    return to_float
