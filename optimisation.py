@@ -29,31 +29,9 @@ metric_lists = {
     "GD": gd
 }
 
-def getTargetImage(aTarget, aScale):
-    """Get a ground truth image"""
-
-    # read target image
-    target_image = cv2.imread("./"+aTarget, 0);
-
-    # zero-mean normalisation
-    target_image = (target_image-target_image.mean())/target_image.std();
-
-    #set nan and inf to zero
-    target_image[np.isnan(target_image)]=0.;
-    target_image[target_image > 1E308] = 0.;
-    target_image=np.float32(target_image);
-
-    if aScale != 0:
-        # image pyramids - down scale
-        for p in range(aScale):
-            target_image = cv2.pyrDown(target_image);
-
-    return target_image
-
 def getSingleMetric(aPrediction):
     """Get single value of chosen metric"""
     obj_list = [];
-    down_scale = int(args.downscale);
 
     for s in range(len(aPrediction[:, 0])):
 
@@ -67,7 +45,7 @@ def getSingleMetric(aPrediction):
 
 def getAllMetrics(aPrediction):
     """Make use of all available metrics"""
-    down_scale = int(args.downscale);
+    down_scale = img_scale;
     obj_list = [];
     obj_list_temp = [];
 
@@ -75,12 +53,6 @@ def getAllMetrics(aPrediction):
 
         pred_image = computePredictedImage(aPrediction[s, :]);
         target_image = target;
-
-        if down_scale != 0:
-            # image pyramids - down scale
-            for p in range(down_scale):
-                pred_image = cv2.pyrDown(pred_image);
-                target_image = cv2.pyrDown(target);
 
         for key in metric_lists:
             obj_value = metric_lists[key](target_image, pred_image);
@@ -104,13 +76,28 @@ class objectiveFunction(Problem):
                             20., 0., 0., 0., 20., 0., 0., 0., 20., 0., 20., 0.,
                             1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1,
                             1.1, 1.1]);
+        self.counter=0;
 
     def _evaluate(self, x, out, *args, **kwargs):
 
         objective = getSingleMetric(x);
         out["F"] = np.array(objective);
         print("FITNESS", np.min(out["F"]));
+        resX = x[np.argmin(out["F"]),:];
 
+        res_pred = computePredictedImage(resX);
+        for scale in range(img_scale):
+            res_pred = cv2.pyrUp(res_pred);
+        resF = metric_lists[single_metric](target_full_reso, res_pred);
+        print("FULLFITNESS", resF);
+
+        resX_list = [];
+        for rx in range(len(resX)):
+            resX_list.append(resX[rx]);
+        print("XVALUE", resX_list);
+        self.counter+=1;
+        global n_gen;
+        n_gen = self.counter;
 
 class multiObjectiveFunction(Problem):
     """Hand Registration with multiple objective functions.
@@ -131,51 +118,49 @@ class multiObjectiveFunction(Problem):
 
         out["F"] = getAllMetrics(x);
 
-def runCMAES(aPopulation, aGeneration, anInitialGuess):
+# def runCMAES(aPopulation, aGeneration, anInitialGuess):
+def runCMAES(anInitialGuess):
     """CMA-ES algorithm"""
 
-    pop_size = int(aPopulation);
-    n_gen = int(aGeneration);
+    # pop_size = int(aPopulation);
+    # n_gen = int(aGeneration);
     initial_guess = strArrayToFloatArray(anInitialGuess);
-
-    if int(args.downscale) != 0:
-        pop_size = int(pop_size/2**int(args.downscale));
-        n_gen = int(n_gen/2**int(args.downscale));
+    # if img_scale != 0:
+    #     pop_size = int(pop_size/2**img_scale);
+    #     n_gen = int(n_gen/2**img_scale);
 
     # problems to be solved
     problem = objectiveFunction();
 
-    if int(args.downscale) == 4:
+    if img_scale == 4:
 
-        # use CMA-ES
-        algorithm = CMAES(popsize=pop_size,
+        # use CMA-ES popsize=pop_size,
+        algorithm = CMAES(
                         CMA_stds=0.1);
     else:
         # use CMA-ES
         algorithm = CMAES(x0=initial_guess,
-                        popsize=pop_size,
                         CMA_stds=0.1);
     # record time
     start = time.time();
 
-    # set up the optimiser
+    # set up the optimiser ('n_iter', n_gen),
     res = minimize(problem,
                    algorithm,
-                   ('n_iter', n_gen),
                    verbose=False);
 
     end = time.time();
     total_time = end-start;
-
     target_image = target;
     # save results
-    saveImageAndCSV(full_path, target_image, res.X, res.F, single_metric, total_time, int(args.downscale));
+    saveImageAndCSV(full_path, target_image, res.X, res.F, single_metric, total_time, img_scale);
 
     global nb_pop, nb_generations, runtime, metric_value, parameters;
-    nb_pop.append(pop_size);
+    # nb_pop.append(pop_size);
+    nb_pop.append(len(res.pop));
     nb_generations.append(n_gen);
     runtime.append(total_time);
-    metric_value=computeAllMetricsValue(target, res.X);
+    metric_value=computeAllMetricsValue(target, res.X, target_full_reso, img_scale);
     for x in range(len(res.X)):
         parameters.append(res.X[x]);
 
@@ -205,7 +190,7 @@ def runNSGA2(aPopulation, aGeneration):
     total_time = end-start;
 
     # save results
-    saveMultipleImageAndCSV(full_path, target_image, res.X, res.F, total_time, int(args.downscale));
+    saveMultipleImageAndCSV(full_path, target_image, res.X, res.F, total_time, img_scale);
 
 # add command-line argument option
 parser = argparse.ArgumentParser(description='2D/3D registration by fast X-ray simulation and optimisation');
@@ -218,7 +203,7 @@ parser.add_argument("--metrics", help="Choose single or all metrics, options=['Z
 parser.add_argument("--downscale", help="Lower the image resolution using Guassian Pyramids, eg. 0 for no scaling, 1 for 1/4 (1/2 width and 1/2 height), 2 for 1/16, so on...")
 parser.add_argument("--pop_size", default=100, help="How many individuals are required (NSGA-II)?");
 parser.add_argument("--gen_size", default=100, help="How many generations are required (NSGA-II)?");
-parser.add_argument("--initial_guess", default=100, help="Initial guess", required=True);
+parser.add_argument("--initial_guess", help="Initial guess", required=True);
 
 args = parser.parse_args();
 
@@ -230,13 +215,18 @@ full_path = args.output_folder+"/"+args.algorithm+"/"+args.metrics+"/"+args.repe
 if not os.path.exists(full_path):
     os.makedirs(full_path);
 
-global target
+global target, img_scale
+
+img_scale=int(args.downscale);
+
 # get ground truth image
-target = getTargetImage(args.target_image, int(args.downscale));
+target = getTargetImage(args.target_image, img_scale);
+target_full_reso = getTargetImage(args.target_image, 0);
 file = open(args.initial_guess, "r");
 file = file.read();
+
 # set up simulation environment.
-setXRayEnvironment(int(args.downscale));
+setXRayEnvironment(img_scale);
 
 np.random.seed();
 
@@ -250,7 +240,8 @@ img_width = target.shape[1];
 img_height = target.shape[0];
 
 if args.algorithm == "CMAES":
-    runCMAES(args.pop_size, args.gen_size, file);
+    # runCMAES(args.pop_size, args.gen_size, file);
+    runCMAES(file);
 elif args.algorithm == "NSGA2":
     runNSGA2(args.pop_size, args.gen_size);
 
@@ -258,7 +249,7 @@ print("METRICS", ',',
      args.metrics, ',',
      args.target_image, ',',
      args.algorithm, ',',
-     int(args.downscale), ',',
+     img_scale, ',',
      img_width, ',',
      img_height, ',',
      nb_pop[0], ',',
@@ -271,6 +262,16 @@ print("METRICS", ',',
      metric_value[4], ',',
      metric_value[5], ',',
      metric_value[6], ',',
-     metric_value[7]);
+     metric_value[7], ',',
+     metric_value[8], ',',
+     metric_value[9], ',',
+     metric_value[10], ',',
+     metric_value[11], ',',
+     metric_value[12], ',',
+     metric_value[13], ',',
+     metric_value[14], ',',
+     metric_value[15]);
 
 print("PARAMS", parameters);
+
+print("GENERATIONS", nb_generations[0]);
