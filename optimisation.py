@@ -33,6 +33,8 @@ def getSingleMetric(aPrediction):
     """Get single value of chosen metric"""
     obj_list = [];
 
+    print("IS IT SAME AS ARGS.POP_SIZE??", len(aPrediction[:, 0]);
+    
     for s in range(len(aPrediction[:, 0])):
 
         pred_image = computePredictedImage(aPrediction[s, :]);
@@ -132,6 +134,9 @@ def runCMAES(anInitialGuess):
     # problems to be solved
     problem = objectiveFunction();
 
+    # Test here args.pop_size
+    # If used, initialise the pop size
+    
     if img_scale == 4:
 
         # use CMA-ES popsize=pop_size,
@@ -157,7 +162,23 @@ def runCMAES(anInitialGuess):
 
     global nb_pop, nb_generations, runtime, metric_value, parameters;
     # nb_pop.append(pop_size);
-    nb_pop.append(len(res.pop));
+    
+          
+    
+    print("pop");
+    print(len(res.pop.get("X")));
+    print(type(res.pop));
+    print(res.pop);
+    print("\nX");
+    print(len(res.X));
+    print(type(res.X));
+    print(res.X);
+    print("\nF");
+    print(len(res.F));
+    print(type(res.F));
+    print(res.F);
+
+    nb_pop.append(len(res.pop.get("X")));
     nb_generations.append(n_gen);
     runtime.append(total_time);
     metric_value=computeAllMetricsValue(target, res.X, target_full_reso, img_scale);
