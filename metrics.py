@@ -7,6 +7,12 @@ from scipy.stats import chisquare, entropy
 from skimage import filters
 import random
 
+def removeNullData(anArray):
+    anArray[np.isnan(anArray)]=0.
+    anArray[np.isinf(anArray)] = 0.
+
+    return anArray
+
 # Similarity metrics
 def zncc(y_true, y_pred):
     """
@@ -17,9 +23,9 @@ def zncc(y_true, y_pred):
         y_true: ground truth or target image
         y_pred: predicted image
     """
-    z = np.sum((y_true-y_true.mean())*(y_pred-y_pred.mean()));
+    z = np.sum((y_true-y_true.mean())*(y_pred-y_pred.mean()))
 
-    z /= -(y_true.shape[0]*y_true.shape[1]*y_true.std()*y_pred.std());
+    z /= -(y_true.shape[0]*y_true.shape[1]*y_true.std()*y_pred.std())
     if np.isnan(z)==True or np.isinf(z)==True:
         z = 0.
 
@@ -32,7 +38,7 @@ def ssim(y_true, y_pred):
         y_true: ground truth or target image
         y_pred: predicted image
     """
-    s = -structural_similarity(y_true, y_pred, data_range=y_pred.max()-y_pred.min());
+    s = -structural_similarity(y_true, y_pred, data_range=y_pred.max()-y_pred.min())
 
     if np.isnan(s)==True or np.isinf(s)==True:
         s = 0.
@@ -47,7 +53,7 @@ def mi(y_true, y_pred):
         y_pred: predicted image
     """
 
-    return -normalized_mutual_info_score(np.ravel(y_true), np.ravel(y_pred));
+    return -normalized_mutual_info_score(np.ravel(y_true), np.ravel(y_pred))
 
 def gc(y_true, y_pred):
     """
@@ -71,14 +77,14 @@ def src(y_true, y_pred):
         y_true: ground truth or target image
         y_pred: predicted image
     """
-    r = 20; # example selected region [20, 20]
-    rn = random.randint(r, min(y_true.shape[0],y_true.shape[1])-20);
+    r = 20 # example selected region [20, 20]
+    rn = random.randint(r, min(y_true.shape[0],y_true.shape[1])-20)
 
-    y_true = y_true[rn:rn+r,rn:rn+r];
-    y_pred = y_pred[rn:rn+r,rn:rn+r];
+    y_true = y_true[rn:rn+r,rn:rn+r]
+    y_pred = y_pred[rn:rn+r,rn:rn+r]
 
-    y_true_rank = y_true.argsort();
-    y_pred_rank = y_pred.argsort();
+    y_true_rank = y_true.argsort()
+    y_pred_rank = y_pred.argsort()
 
     return (6*np.sum(y_true_rank-y_pred_rank)**2/(r*(r**2-1)))
 
@@ -87,18 +93,62 @@ def mae(y_true, y_pred):
     """
     Mean Absolute Error
     @Parameters:
-        y_true: ground truth or target image
-        y_pred: predicted image
+        y_true: ground truth or target image, type=float array
+        y_pred: predicted image, type=float array
     """
+    y_true = removeNullData(y_true)
+    y_pred = removeNullData(y_pred)
 
-    return mean_absolute_error(y_true, y_pred);
+    return mean_absolute_error(y_true, y_pred)
+
+def maeroi(y_true, y_pred, aStartPosition, aBoxX, aBoxY, aPenaltyMultiplier):
+    """
+    Mean Absolute Error with Region Of Interest
+    @Parameters:
+        y_true: ground truth or target image, type=float array
+        y_pred: predicted image, type=float array
+        aRegionOfInterest: location of the start position, type=array
+        aPatchSize: size of the box [aPatchSize, aPatchSize], type=int
+        aPenaltyMultiplier: multiple MAE for each roi
+    """
+    y_true = removeNullData(y_true)
+    y_pred = removeNullData(y_pred)
+
+    start = np.array(aStartPosition)
+    toltal_patches = start.shape[0]
+    x = aBoxX
+    y = aBoxY
+    penalty = aPenaltyMultiplier
+
+    obj_toltal = mean_absolute_error(y_true, y_pred)
+    obj_temp = 0
+
+    if toltal_patches > 1:
+
+        for i in range(toltal_patches):
+            s1 = start[i,0]
+            s2 = start[i,1]
+
+            obj = mean_absolute_error(y_true[s1:s1+x, s2:s2+y], y_pred[s1:s1+x, s2:s2+y])
+            obj*= penalty[i]
+            obj_temp += obj
+
+    else:
+        s1 = start[0,0]
+        s2 = start[0,1]
+        obj = mean_absolute_error(y_true[s1:s1+x, s2:s2+y], y_pred[s1:s1+x, s2:s2+y])
+        obj_temp=obj*penalty
+
+    obj_toltal += obj_temp
+
+    return obj_toltal
 
 def cs(y_true, y_pred):
     """
     Chi-square distance
     @Parameters:
-        y_true: ground truth or target image
-        y_pred: predicted image
+        y_true: ground truth or target image, type=float array
+        y_pred: predicted image, type=float array
     """
     chiq, p_value = chisquare(np.ravel(y_pred), f_exp=np.ravel(y_true))
 
@@ -108,8 +158,8 @@ def ssd(y_true, y_pred):
     """
     Sum of Square Difference
     @Parameters:
-        y_true: ground truth or target image
-        y_pred: predicted image
+        y_true: ground truth or target image, type=float array
+        y_pred: predicted image, type=float array
     """
     return np.sum((y_true - y_pred)**2)
 
@@ -117,15 +167,15 @@ def gd(y_true, y_pred):
     """
     Gradient Difference
     @Parameters:
-        y_true: ground truth or target image
-        y_pred: predicted image
+        y_true: ground truth or target image, type=float array
+        y_pred: predicted image, type=float array
     """
-    var_true = np.var(y_true);
-    var_pred = np.var(y_pred);
+    var_true = np.var(y_true)
+    var_pred = np.var(y_pred)
     # horizontal sobel filter
-    sobel_diff_h = np.sum(filters.sobel(y_true,axis=0)-filters.sobel(y_pred,axis=0));
+    sobel_diff_h = np.sum(filters.sobel(y_true,axis=0)-filters.sobel(y_pred,axis=0))
     # vertical sobel filter
-    sobel_diff_v = np.sum(filters.sobel(y_true,axis=1)-filters.sobel(y_pred,axis=1));
+    sobel_diff_v = np.sum(filters.sobel(y_true,axis=1)-filters.sobel(y_pred,axis=1))
 
     return (var_true/(var_true+sobel_diff_h**2) + var_pred/(var_pred+sobel_diff_v**2))
 
@@ -133,17 +183,17 @@ def pi(y_true, y_pred):
     """
     Pattern Intensity
     @Parameters:
-        y_true: ground truth or target image
-        y_pred: predicted image
+        y_true: ground truth or target image, type=float array
+        y_pred: predicted image, type=float array
     """
 
-    s = 10;# sigma
-    r = 3; # radius
-    sum_list=[];
+    s = 10# sigma
+    r = 3 # radius
+    sum_list=[]
 
     for i in range(r, y_true.shape[0]-r-1):
         for j in range(r-1, y_true.shape[1]-r-1):
-            sum = np.sum(y_true[i-3:i+4, j-3:j+4]-y_pred[i-3:i+4, j-3:j+4]);
-            sum_list.append(sum);
+            sum = np.sum(y_true[i-3:i+4, j-3:j+4]-y_pred[i-3:i+4, j-3:j+4])
+            sum_list.append(sum)
 
     return (s**2/(s**2 + np.sum(sum_list)**2))

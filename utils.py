@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import cv2
 from metrics import *
+import skimage
 
 def setXRayParameters(SOD, SDD):
     """Set up position of the X-ray source, object and the detector"""
@@ -34,6 +35,7 @@ def setXRayEnvironment(aScale):
 
     width = int(img_width);
     height = int(img_height);
+
     gvxr.setDetectorNumberOfPixels(width, height);
     gvxr.setDetectorPixelSize(pixel_size, pixel_size, "mm");
 
@@ -303,11 +305,35 @@ def boneRotation(anAngle, aFinger):
 
     return image
 
+def getTargetImage(aTarget, aScale):
+    """Get a ground truth image"""
+
+    # read target image
+    target_image = cv2.imread("./"+aTarget, 0);
+
+    # zero-mean normalisation
+    target_image = (target_image-target_image.mean())/target_image.std();
+
+    #set nan and inf to zero
+    target_image[np.isnan(target_image)]=0.;
+    target_image[np.isinf(target_image)] = 0.;
+    target_image=np.float32(target_image);
+
+    if aScale != 0:
+        # image pyramids - down scale
+        for p in range(aScale):
+            target_image = cv2.pyrDown(target_image);
+
+    return target_image
+
 def computePredictedImage(aPrediction):
     """Compute predicted image from predicted parameters
     @Parameters:
         aPrediction: a set of parameters for determining predicted images
     """
+    if aPrediction.ndim >= 2:
+        aPrediction = aPrediction[0,:];
+
     number_of_angles = 36;
     number_of_distances = 2;
 
@@ -377,13 +403,15 @@ def saveMultipleImageAndCSV(aPath, aTarget, aPredition, aMetricValue, aComputedT
 
         target_image = aTarget;
         pred_image = computePredictedImage(aPredition[r,:]);
-        
+
         plt.imsave(aPath +"/pred-%d.png" % r, pred_image, cmap='Greys_r');
         m = aMetricValue;
-        row = [[r, aPredition[r,:], m[r,0], m[r,1], m[r,2], m[r,3], m[r,4], \
-                m[r,5], m[r,6], m[r,7], aComputedTime]]
-        df2 = pd.DataFrame(row, columns=['Image', 'Parameters', 'ZNCC', 'SSIM', 'MI', 'GC', \
-                'MAE', 'CS', 'SSD', 'GD', 'Time(s)']);
+        # row = [[r, aPredition[r,:], -m[r,0], -m[r,1], -m[r,2], -m[r,3], m[r,4], \
+        #         m[r,5], m[r,6], m[r,7], aComputedTime]]
+        # df2 = pd.DataFrame(row, columns=['Image', 'Parameters', 'ZNCC', 'SSIM', 'MI', 'GC', \
+        #         'MAE', 'CS', 'SSD', 'GD', 'Time(s)']);
+        row = [[r, aPredition[r,:], -m[r,0], m[r,1], aComputedTime]];
+        df2 = pd.DataFrame(row, columns=['Image', 'Parameters', 'ZNCC', 'MAE', 'Time(s)']);
         df = df.append(df2, ignore_index=True);
 
         error_map = abs(target_image-pred_image);
@@ -395,7 +423,8 @@ def saveMultipleImageAndCSV(aPath, aTarget, aPredition, aMetricValue, aComputedT
 
     print("Image and csv file are saved");
 
-def computeAllMetricsValue(aTarget, aPredition):
+def computeAllMetricsValue(aTarget, aPredition, aTargetFullReso, aScale):
+    """Compute metric values for two given images (predition and target)"""
 
     pred_image = computePredictedImage(aPredition);
     target_image = aTarget;
@@ -409,13 +438,45 @@ def computeAllMetricsValue(aTarget, aPredition):
     SSD = ssd(target_image, pred_image);
     GD = gd(target_image, pred_image);
 
-    return [ZNCC, SSIM, MI, GC, MAE, CS, SSD, GD]
+    pred_image_full_reso = pred_image;
+    if aScale != 0:
+        for p in range(aScale):
+            pred_image_full_reso = cv2.pyrUp(pred_image_full_reso);
+    target_image_full_reso = aTargetFullReso;
 
-def strArrayToFloatArray(aString):
+    ZNCC_f = -zncc(target_image_full_reso, pred_image_full_reso);
+    SSIM_f = -ssim(target_image_full_reso, pred_image_full_reso);
+    MI_f = -mi(target_image_full_reso, pred_image_full_reso);
+    GC_f = -gc(target_image_full_reso, pred_image_full_reso);
+    MAE_f = mae(target_image_full_reso, pred_image_full_reso);
+    CS_f = cs(target_image_full_reso, pred_image_full_reso);
+    SSD_f = ssd(target_image_full_reso, pred_image_full_reso);
+    GD_f = gd(target_image_full_reso, pred_image_full_reso);
 
-    s = aString.replace('PARAMS', '');
+    return [ZNCC, SSIM, MI, GC, MAE, CS, SSD, GD, ZNCC_f, SSIM_f, MI_f, GC_f, MAE_f, CS_f, SSD_f, GD_f ]
+
+def strArrayToFloatArray(aString, aFlag, aMark):
+    """Taking string array and output int array"""
+
+    s = aString.replace(aFlag, '');
     s = s.replace('[', '');
     s = s.replace(']', '');
-    to_float = np.fromstring(s, dtype=float, sep=",")
+    if aMark == 'space':
+        to_float = np.fromstring(s, dtype=float, sep=' ')
+    else:
+        to_float = np.fromstring(s, dtype=float, sep=',')
 
     return to_float
+
+def create_mask(anImage, aThreshold):
+
+    # if anImage.ndim > 2:
+    #     blur = skimage.color.rgb2gray(image)
+    #     blur = skimage.filters.gaussian(blur, sigma=1)
+    # else:
+    #     blur = skimage.filters.gaussian(anImage, sigma=1)
+
+    mask = anImage < aThreshold
+    mask = mask.astype(int)
+
+    return mask
