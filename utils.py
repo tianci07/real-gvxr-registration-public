@@ -14,7 +14,7 @@ def setXRayParameters(SOD, SDD):
     gvxr.setDetectorPosition(SOD - SDD, 0.0, 0.0, "cm");
     gvxr.usePointSource();
 
-def setXRayEnvironment(aScale):
+def setXRayEnvironment(aModelPath, aScale):
     """Set up initial environment for X-ray simulation"""
     gvxr.createWindow();
     gvxr.setWindowSize(512, 512);
@@ -39,9 +39,9 @@ def setXRayEnvironment(aScale):
     gvxr.setDetectorNumberOfPixels(width, height);
     gvxr.setDetectorPixelSize(pixel_size, pixel_size, "mm");
 
-    setXRayParameters(10.0, 100.0);
+    setXRayParameters(90.0, 100.0);
 
-    gvxr.loadSceneGraph("./hand.dae", "m");
+    gvxr.loadSceneGraph(aModelPath, "m");
     node_label_set = [];
     node_label_set.append('root');
 
@@ -174,28 +174,28 @@ def updateLocalTransformationMatrixSet(anAngle,  aFinger):
     elif aFinger == 'Rescale':
 
         # re-scale thumb
-        gvxr.scaleNode('node-Thu_Prox', 1, 1, anAngle[0], 'mm');
-        gvxr.scaleNode('node-Thu_Dist', 1, 1, anAngle[0], 'mm');
+        gvxr.scaleNode('node-Thu_Prox', 1, 1, anAngle[0]);
+        gvxr.scaleNode('node-Thu_Dist', 1, 1, anAngle[0]);
 
         # re-scale Index
-        gvxr.scaleNode('node-Ind_Prox', 1, 1, anAngle[2], 'mm');
-        gvxr.scaleNode('node-Ind_Midd', 1, 1, anAngle[3], 'mm');
-        gvxr.scaleNode('node-Ind_Dist', 1, 1, anAngle[4], 'mm');
+        gvxr.scaleNode('node-Ind_Prox', 1, 1, anAngle[2]);
+        gvxr.scaleNode('node-Ind_Midd', 1, 1, anAngle[3]);
+        gvxr.scaleNode('node-Ind_Dist', 1, 1, anAngle[4]);
 
         # re-scale Middle
-        gvxr.scaleNode('node-Mid_Prox', 1, 1, anAngle[5], 'mm');
-        gvxr.scaleNode('node-Mid_Midd', 1, 1, anAngle[6], 'mm');
-        gvxr.scaleNode('node-Mid_Dist', 1, 1, anAngle[7], 'mm');
+        gvxr.scaleNode('node-Mid_Prox', 1, 1, anAngle[5]);
+        gvxr.scaleNode('node-Mid_Midd', 1, 1, anAngle[6]);
+        gvxr.scaleNode('node-Mid_Dist', 1, 1, anAngle[7]);
 
         # re-scale Ring
-        gvxr.scaleNode('node-Thi_Prox', 1, 1, anAngle[8], 'mm');
-        gvxr.scaleNode('node-Thi_Midd', 1, 1, anAngle[9], 'mm');
-        gvxr.scaleNode('node-Thi_Dist', 1, 1, anAngle[10], 'mm');
+        gvxr.scaleNode('node-Thi_Prox', 1, 1, anAngle[8]);
+        gvxr.scaleNode('node-Thi_Midd', 1, 1, anAngle[9]);
+        gvxr.scaleNode('node-Thi_Dist', 1, 1, anAngle[10]);
 
         # re-scale Little
-        gvxr.scaleNode('node-Lit_Prox', 1, 1, anAngle[11], 'mm');
-        gvxr.scaleNode('node-Lit_Midd', 1, 1, anAngle[12], 'mm');
-        gvxr.scaleNode('node-Lit_Dist', 1, 1, anAngle[13], 'mm');
+        gvxr.scaleNode('node-Lit_Prox', 1, 1, anAngle[11]);
+        gvxr.scaleNode('node-Lit_Midd', 1, 1, anAngle[12]);
+        gvxr.scaleNode('node-Lit_Dist', 1, 1, anAngle[13]);
 
     elif aFinger == 'All':
 
@@ -230,57 +230,28 @@ def updateLocalTransformationMatrixSet(anAngle,  aFinger):
 
         # Rescale bones
         # Thumb
-        gvxr.scaleNode('node-Thu_Prox', 1, 1, anAngle[22], 'mm');
-        gvxr.scaleNode('node-Thu_Dist', 1, 1, anAngle[23], 'mm');
+        gvxr.scaleNode('node-Thu_Prox', 1, 1, anAngle[22]);
+        gvxr.scaleNode('node-Thu_Dist', 1, 1, anAngle[23]);
 
         # re-scale Index
-        gvxr.scaleNode('node-Ind_Prox', 1, 1, anAngle[24], 'mm');
-        gvxr.scaleNode('node-Ind_Midd', 1, 1, anAngle[25], 'mm');
-        gvxr.scaleNode('node-Ind_Dist', 1, 1, anAngle[26], 'mm');
+        gvxr.scaleNode('node-Ind_Prox', 1, 1, anAngle[24]);
+        gvxr.scaleNode('node-Ind_Midd', 1, 1, anAngle[25]);
+        gvxr.scaleNode('node-Ind_Dist', 1, 1, anAngle[26]);
 
         # re-scale Middle
-        gvxr.scaleNode('node-Mid_Prox', 1, 1, anAngle[27], 'mm');
-        gvxr.scaleNode('node-Mid_Midd', 1, 1, anAngle[28], 'mm');
-        gvxr.scaleNode('node-Mid_Dist', 1, 1, anAngle[29], 'mm');
+        gvxr.scaleNode('node-Mid_Prox', 1, 1, anAngle[27]);
+        gvxr.scaleNode('node-Mid_Midd', 1, 1, anAngle[28]);
+        gvxr.scaleNode('node-Mid_Dist', 1, 1, anAngle[29]);
 
         # re-scale Ring
-        gvxr.scaleNode('node-Thi_Prox', 1, 1, anAngle[30], 'mm');
-        gvxr.scaleNode('node-Thi_Midd', 1, 1, anAngle[31], 'mm');
-        gvxr.scaleNode('node-Thi_Dist', 1, 1, anAngle[32], 'mm');
+        gvxr.scaleNode('node-Thi_Prox', 1, 1, anAngle[30]);
+        gvxr.scaleNode('node-Thi_Midd', 1, 1, anAngle[31]);
+        gvxr.scaleNode('node-Thi_Dist', 1, 1, anAngle[32]);
 
         # re-scale Little
-        gvxr.scaleNode('node-Lit_Prox', 1, 1, anAngle[33], 'mm');
-        gvxr.scaleNode('node-Lit_Midd', 1, 1, anAngle[34], 'mm');
-        gvxr.scaleNode('node-Lit_Dist', 1, 1, anAngle[35], 'mm');
-
-def computeAverageHand():
-    """
-    Rescale hand bones to average size according to the hand
-    measurements from 20 patients
-    """
-    # re-scale Thumb
-    gvxr.scaleNode('node-Thu_Prox', 1, 1, 1.086, 'mm');
-    gvxr.scaleNode('node-Thu_Dist', 1, 1, 0.897, 'mm');
-
-    # re-scale Index
-    gvxr.scaleNode('node-Ind_Prox', 1, 1, 0.969, 'mm');
-    gvxr.scaleNode('node-Ind_Midd', 1, 1, 1.065, 'mm');
-    gvxr.scaleNode('node-Ind_Dist', 1, 1, 1.141, 'mm');
-
-    # re-scale Middle
-    gvxr.scaleNode('node-Mid_Prox', 1, 1, 0.962, 'mm');
-    gvxr.scaleNode('node-Mid_Midd', 1, 1, 1.080, 'mm');
-    gvxr.scaleNode('node-Mid_Dist', 1, 1, 1.053, 'mm');
-
-    # re-scale Ring
-    gvxr.scaleNode('node-Thi_Prox', 1, 1, 1.017, 'mm');
-    gvxr.scaleNode('node-Thi_Midd', 1, 1, 1.084, 'mm');
-    gvxr.scaleNode('node-Thi_Dist', 1, 1, 1.056, 'mm');
-
-    # re-scale Little
-    gvxr.scaleNode('node-Lit_Prox', 1, 1, 1.034, 'mm');
-    gvxr.scaleNode('node-Lit_Midd', 1, 1, 1.126, 'mm');
-    gvxr.scaleNode('node-Lit_Dist', 1, 1, 1.070, 'mm');
+        gvxr.scaleNode('node-Lit_Prox', 1, 1, anAngle[33]);
+        gvxr.scaleNode('node-Lit_Midd', 1, 1, anAngle[34]);
+        gvxr.scaleNode('node-Lit_Dist', 1, 1, anAngle[35]);
 
 def boneRotation(anAngle, aFinger):
     """
@@ -305,24 +276,27 @@ def boneRotation(anAngle, aFinger):
 
     return image
 
-def getTargetImage(aTarget, aScale):
+def getTargetImage(aTarget, aScale, log=True):
     """Get a ground truth image"""
 
     # read target image
     target_image = cv2.imread("./"+aTarget, 0);
 
-    # zero-mean normalisation
-    target_image = (target_image-target_image.mean())/target_image.std();
-
     #set nan and inf to zero
-    target_image[np.isnan(target_image)]=0.;
-    target_image[np.isinf(target_image)] = 0.;
-    target_image=np.float32(target_image);
+    target_image[np.isnan(target_image)]=0.
+    target_image[np.isinf(target_image)] = 0.
+    target_image=np.float32(target_image)
 
     if aScale != 0:
         # image pyramids - down scale
         for p in range(aScale):
-            target_image = cv2.pyrDown(target_image);
+            target_image = cv2.pyrDown(target_image)
+    
+    if log:
+        target_image = np.log(target_image)
+    
+    # zero-mean normalisation
+    target_image = (target_image-target_image.mean())/target_image.std()
 
     return target_image
 
@@ -351,132 +325,3 @@ def computePredictedImage(aPrediction):
     pred_image = boneRotation(best_angle, 'All');
 
     return pred_image
-
-def saveImageAndCSV(aPath, aTarget, aPredition, aMetricValue, aMetricName, aComputedTime, aScale):
-    """
-    Save single image and results.
-    @Parameters:
-        aPath: path to store the results
-        aTarget: a target image
-        aPredition: a set of predicted parameters (single image)
-        aMetricValue: value of the metric (float, single value)
-        aMetricName: name of the metric
-        aComputedTime: total time cost to compute results
-        aScale: Scaling factors
-    """
-    df = pd.DataFrame();
-    pred_image = computePredictedImage(aPredition);
-    target_image = aTarget;
-
-    plt.imsave(aPath +"/pred.png", pred_image, cmap='Greys_r');
-    plt.imsave(aPath+"/target.png", target_image, cmap='Greys_r');
-
-    m = aMetricValue;
-    row = [[aPredition, m[0], aComputedTime]];
-    df2 = pd.DataFrame(row, columns=['Parameters', aMetricName, 'Time(s)']);
-    df = df.append(df2, ignore_index=True);
-
-    error_map = abs(target_image-pred_image);
-    plt.imsave(aPath+"/error-map.png", error_map, cmap='Greys_r');
-
-    correlation_map = target_image*pred_image;
-    plt.imsave(aPath+"/correlation-map.png", correlation_map, cmap='Greys_r');
-
-    df.to_csv(aPath+"/results.csv" );
-
-    print("Image and csv file are saved");
-
-def saveMultipleImageAndCSV(aPath, aTarget, aPredition, aMetricValue, aComputedTime, aScale):
-    """
-    Save multiple images and results.
-    @Parameters:
-        aPath: path to store the results
-        aTarget: a target image
-        aPredition: a set of predicted parameters (multiple images)
-        aMetricValue: value of the metrics (1D array)
-        aComputedTime: total time cost to compute results
-        aScale: Scaling factors
-    """
-    df = pd.DataFrame();
-
-    for r in range(len(aPredition[:,0])):
-
-        target_image = aTarget;
-        pred_image = computePredictedImage(aPredition[r,:]);
-
-        plt.imsave(aPath +"/pred-%d.png" % r, pred_image, cmap='Greys_r');
-        m = aMetricValue;
-        # row = [[r, aPredition[r,:], -m[r,0], -m[r,1], -m[r,2], -m[r,3], m[r,4], \
-        #         m[r,5], m[r,6], m[r,7], aComputedTime]]
-        # df2 = pd.DataFrame(row, columns=['Image', 'Parameters', 'ZNCC', 'SSIM', 'MI', 'GC', \
-        #         'MAE', 'CS', 'SSD', 'GD', 'Time(s)']);
-        row = [[r, aPredition[r,:], -m[r,0], m[r,1], aComputedTime]];
-        df2 = pd.DataFrame(row, columns=['Image', 'Parameters', 'ZNCC', 'MAE', 'Time(s)']);
-        df = df.append(df2, ignore_index=True);
-
-        error_map = abs(target_image-pred_image);
-        plt.imsave(aPath +"/error-map-%d.png" % r, error_map, cmap='Greys_r');
-
-        correlation_map = target_image*pred_image;
-        plt.imsave(aPath +"/correlation-map-%d.png" % r, correlation_map, cmap='Greys_r');
-    df.to_csv(aPath +"/results.csv" );
-
-    print("Image and csv file are saved");
-
-def computeAllMetricsValue(aTarget, aPredition, aTargetFullReso, aScale):
-    """Compute metric values for two given images (predition and target)"""
-
-    pred_image = computePredictedImage(aPredition);
-    target_image = aTarget;
-
-    ZNCC = -zncc(target_image, pred_image);
-    SSIM = -ssim(target_image, pred_image);
-    MI = -mi(target_image, pred_image);
-    GC = -gc(target_image, pred_image);
-    MAE = mae(target_image, pred_image);
-    CS = cs(target_image, pred_image);
-    SSD = ssd(target_image, pred_image);
-    GD = gd(target_image, pred_image);
-
-    pred_image_full_reso = pred_image;
-    if aScale != 0:
-        for p in range(aScale):
-            pred_image_full_reso = cv2.pyrUp(pred_image_full_reso);
-    target_image_full_reso = aTargetFullReso;
-
-    ZNCC_f = -zncc(target_image_full_reso, pred_image_full_reso);
-    SSIM_f = -ssim(target_image_full_reso, pred_image_full_reso);
-    MI_f = -mi(target_image_full_reso, pred_image_full_reso);
-    GC_f = -gc(target_image_full_reso, pred_image_full_reso);
-    MAE_f = mae(target_image_full_reso, pred_image_full_reso);
-    CS_f = cs(target_image_full_reso, pred_image_full_reso);
-    SSD_f = ssd(target_image_full_reso, pred_image_full_reso);
-    GD_f = gd(target_image_full_reso, pred_image_full_reso);
-
-    return [ZNCC, SSIM, MI, GC, MAE, CS, SSD, GD, ZNCC_f, SSIM_f, MI_f, GC_f, MAE_f, CS_f, SSD_f, GD_f ]
-
-def strArrayToFloatArray(aString, aFlag, aMark):
-    """Taking string array and output int array"""
-
-    s = aString.replace(aFlag, '');
-    s = s.replace('[', '');
-    s = s.replace(']', '');
-    if aMark == 'space':
-        to_float = np.fromstring(s, dtype=float, sep=' ')
-    else:
-        to_float = np.fromstring(s, dtype=float, sep=',')
-
-    return to_float
-
-def create_mask(anImage, aThreshold):
-
-    # if anImage.ndim > 2:
-    #     blur = skimage.color.rgb2gray(image)
-    #     blur = skimage.filters.gaussian(blur, sigma=1)
-    # else:
-    #     blur = skimage.filters.gaussian(anImage, sigma=1)
-
-    mask = anImage < aThreshold
-    mask = mask.astype(int)
-
-    return mask

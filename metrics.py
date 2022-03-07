@@ -1,8 +1,6 @@
 import numpy as np
 import math
-from skimage.metrics import structural_similarity
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-from sklearn.metrics.cluster import normalized_mutual_info_score
+from skimage import metrics
 from scipy.stats import chisquare, entropy
 from skimage import filters
 import random
@@ -13,8 +11,8 @@ def removeNullData(anArray):
 
     return anArray
 
-# Similarity metrics
-def zncc(y_true, y_pred):
+# Similarity metrics, use negative values
+def nzncc(y_true, y_pred):
     """
     Zero-mean Normalised Cross Correlation.
     ZNCC = (1/n)*(1/(std(target_image)*std(est_image)))* SUM_n_by_n{(target_image-
@@ -31,21 +29,21 @@ def zncc(y_true, y_pred):
 
     return z
 
-def ssim(y_true, y_pred):
+def nssim(y_true, y_pred):
     """
     Structural Similarity
     @Parameters:
         y_true: ground truth or target image
         y_pred: predicted image
     """
-    s = -structural_similarity(y_true, y_pred, data_range=y_pred.max()-y_pred.min())
+    s = -metrics.structural_similarity(y_true, y_pred, data_range=y_pred.max()-y_pred.min())
 
     if np.isnan(s)==True or np.isinf(s)==True:
         s = 0.
 
     return s
 
-def mi(y_true, y_pred):
+def nmi(y_true, y_pred):
     """
     Mutual information
     @Parameters:
@@ -53,9 +51,9 @@ def mi(y_true, y_pred):
         y_pred: predicted image
     """
 
-    return -normalized_mutual_info_score(np.ravel(y_true), np.ravel(y_pred))
+    return -metrics.normalized_mutual_information(y_true, y_pred)
 
-def gc(y_true, y_pred):
+def ngc(y_true, y_pred):
     """
     Gradient Correlation
     @Parameters:
@@ -70,7 +68,7 @@ def gc(y_true, y_pred):
 
     return -(ZNCC_h+ZNCC_v)/2
 
-def src(y_true, y_pred):
+def nsrc(y_true, y_pred):
     """
     Stochastic Rank Correlation
     @Parameters:
@@ -98,50 +96,8 @@ def mae(y_true, y_pred):
     """
     y_true = removeNullData(y_true)
     y_pred = removeNullData(y_pred)
-
-    return mean_absolute_error(y_true, y_pred)
-
-def maeroi(y_true, y_pred, aStartPosition, aBoxX, aBoxY, aPenaltyMultiplier):
-    """
-    Mean Absolute Error with Region Of Interest
-    @Parameters:
-        y_true: ground truth or target image, type=float array
-        y_pred: predicted image, type=float array
-        aRegionOfInterest: location of the start position, type=array
-        aPatchSize: size of the box [aPatchSize, aPatchSize], type=int
-        aPenaltyMultiplier: multiple MAE for each roi
-    """
-    y_true = removeNullData(y_true)
-    y_pred = removeNullData(y_pred)
-
-    start = np.array(aStartPosition)
-    toltal_patches = start.shape[0]
-    x = aBoxX
-    y = aBoxY
-    penalty = aPenaltyMultiplier
-
-    obj_toltal = mean_absolute_error(y_true, y_pred)
-    obj_temp = 0
-
-    if toltal_patches > 1:
-
-        for i in range(toltal_patches):
-            s1 = start[i,0]
-            s2 = start[i,1]
-
-            obj = mean_absolute_error(y_true[s1:s1+x, s2:s2+y], y_pred[s1:s1+x, s2:s2+y])
-            obj*= penalty[i]
-            obj_temp += obj
-
-    else:
-        s1 = start[0,0]
-        s2 = start[0,1]
-        obj = mean_absolute_error(y_true[s1:s1+x, s2:s2+y], y_pred[s1:s1+x, s2:s2+y])
-        obj_temp=obj*penalty
-
-    obj_toltal += obj_temp
-
-    return obj_toltal
+    
+    return np.mean(np.abs(y_true - y_pred))
 
 def cs(y_true, y_pred):
     """
@@ -161,7 +117,11 @@ def ssd(y_true, y_pred):
         y_true: ground truth or target image, type=float array
         y_pred: predicted image, type=float array
     """
-    return np.sum((y_true - y_pred)**2)
+    return np.sum(np.square(y_true - y_pred))
+
+def rmse(y_true, y_pred):
+    
+    return math.sqrt(np.mean(np.square(y_true - y_pred)))
 
 def gd(y_true, y_pred):
     """

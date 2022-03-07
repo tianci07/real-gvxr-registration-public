@@ -8,5 +8,4 @@ cv2==4.1.0-pre
 pandas==1.0.4
 matplotlib==3.2.2
 
-###### Install seperately from pip ######
 gVirtualXRay==1.0.0
