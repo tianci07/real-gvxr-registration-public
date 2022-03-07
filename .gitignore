@@ -1,0 +1,6 @@
+hand_registration.ipynd
+input_data/
+output_data/
+plots/
+__pycache__
+.ipynb_checkpoints/
