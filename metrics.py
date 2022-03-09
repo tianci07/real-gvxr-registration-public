@@ -12,7 +12,7 @@ def removeNullData(anArray):
     return anArray
 
 # Similarity metrics, use negative values
-def nzncc(y_true, y_pred):
+def ZNCC(y_true, y_pred):
     """
     Zero-mean Normalised Cross Correlation.
     ZNCC = (1/n)*(1/(std(target_image)*std(est_image)))* SUM_n_by_n{(target_image-
@@ -23,27 +23,27 @@ def nzncc(y_true, y_pred):
     """
     z = np.sum((y_true-y_true.mean())*(y_pred-y_pred.mean()))
 
-    z /= -(y_true.shape[0]*y_true.shape[1]*y_true.std()*y_pred.std())
+    z /= (y_true.shape[0]*y_true.shape[1]*y_true.std()*y_pred.std())
     if np.isnan(z)==True or np.isinf(z)==True:
         z = 0.
 
     return z
 
-def nssim(y_true, y_pred):
+def SSIM(y_true, y_pred):
     """
     Structural Similarity
     @Parameters:
         y_true: ground truth or target image
         y_pred: predicted image
     """
-    s = -metrics.structural_similarity(y_true, y_pred, data_range=y_pred.max()-y_pred.min())
+    s = metrics.structural_similarity(y_true, y_pred, data_range=y_pred.max()-y_pred.min())
 
     if np.isnan(s)==True or np.isinf(s)==True:
         s = 0.
 
     return s
 
-def nmi(y_true, y_pred):
+def MI(y_true, y_pred):
     """
     Mutual information
     @Parameters:
@@ -51,9 +51,9 @@ def nmi(y_true, y_pred):
         y_pred: predicted image
     """
 
-    return -metrics.normalized_mutual_information(y_true, y_pred)
+    return metrics.normalized_mutual_information(y_true, y_pred)
 
-def ngc(y_true, y_pred):
+def GC(y_true, y_pred):
     """
     Gradient Correlation
     @Parameters:
@@ -66,9 +66,9 @@ def ngc(y_true, y_pred):
     # vertical sobel filter
     ZNCC_v = zncc(filters.sobel(y_true,axis=1), filters.sobel(y_pred,axis=1))
 
-    return -(ZNCC_h+ZNCC_v)/2
+    return (ZNCC_h+ZNCC_v)/2
 
-def nsrc(y_true, y_pred):
+def SRC(y_true, y_pred):
     """
     Stochastic Rank Correlation
     @Parameters:
@@ -87,7 +87,7 @@ def nsrc(y_true, y_pred):
     return (6*np.sum(y_true_rank-y_pred_rank)**2/(r*(r**2-1)))
 
 # Dis-similarity metrics
-def mae(y_true, y_pred):
+def MAE(y_true, y_pred):
     """
     Mean Absolute Error
     @Parameters:
@@ -99,7 +99,7 @@ def mae(y_true, y_pred):
     
     return np.mean(np.abs(y_true - y_pred))
 
-def cs(y_true, y_pred):
+def CS(y_true, y_pred):
     """
     Chi-square distance
     @Parameters:
@@ -110,7 +110,7 @@ def cs(y_true, y_pred):
 
     return chiq
 
-def ssd(y_true, y_pred):
+def SSD(y_true, y_pred):
     """
     Sum of Square Difference
     @Parameters:
@@ -119,11 +119,11 @@ def ssd(y_true, y_pred):
     """
     return np.sum(np.square(y_true - y_pred))
 
-def rmse(y_true, y_pred):
+def RMSE(y_true, y_pred):
     
     return math.sqrt(np.mean(np.square(y_true - y_pred)))
 
-def gd(y_true, y_pred):
+def GD(y_true, y_pred):
     """
     Gradient Difference
     @Parameters:
@@ -139,7 +139,7 @@ def gd(y_true, y_pred):
 
     return (var_true/(var_true+sobel_diff_h**2) + var_pred/(var_pred+sobel_diff_v**2))
 
-def pi(y_true, y_pred):
+def PI(y_true, y_pred):
     """
     Pattern Intensity
     @Parameters:
