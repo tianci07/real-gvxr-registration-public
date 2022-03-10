@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import cv2
 from metrics import *
 import skimage
+from skimage.filters import gaussian
 
 def setXRayParameters(SOD, SDD):
     """Set up position of the X-ray source, object and the detector"""
@@ -296,15 +297,12 @@ def getTargetImage(aTarget, aScale, log=True):
         target_image = np.log(target_image)
 
     # zero-mean normalisation
-    target_image = (target_image-target_image.mean())/target_image.std()
+    target_image_new = (target_image-target_image.mean())/target_image.std()
 
-    return target_image
+    return target_image, target_image_new
 
 def computePredictedImage(aPrediction):
-    """Compute predicted image from predicted parameters
-    @Parameters:
-        aPrediction: a set of parameters for determining predicted images
-    """
+    
     if aPrediction.ndim >= 2:
         aPrediction = aPrediction[0,:]
 
@@ -325,3 +323,15 @@ def computePredictedImage(aPrediction):
     pred_image = boneRotation(best_angle, 'All')
 
     return pred_image
+
+def addSharpenFilterNormalise(image, ksize, scaling, vmin, vmax):
+    
+    detail = (image - gaussian(image, [ksize,ksize]))
+    
+    image = image + detail*scaling
+    image[image<vmin] = vmin
+    image[image>vmax] = vmax
+
+    image_sharpen = (image-image.mean())/image.std()
+    
+    return image_sharpen
