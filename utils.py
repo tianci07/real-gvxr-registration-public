@@ -15,7 +15,7 @@ def setXRayParameters(SOD, SDD):
     gvxr.setDetectorPosition(SOD - SDD, 0.0, 0.0, "cm")
     gvxr.usePointSource()
 
-def setXRayEnvironment(aModelPath, aScale):
+def setXRayEnvironment(aModelPath, aScale, addWidth=0, addHeight=0):
     """Set up initial environment for X-ray simulation"""
     gvxr.createWindow()
     gvxr.setWindowSize(512, 512)
@@ -34,8 +34,8 @@ def setXRayEnvironment(aModelPath, aScale):
         img_height /= 2**aScale
         pixel_size *=2**aScale
 
-    width = int(img_width)
-    height = int(img_height)
+    width = int(img_width+addWidth)
+    height = int(img_height+addHeight)
 
     gvxr.setDetectorNumberOfPixels(width, height)
     gvxr.setDetectorPixelSize(pixel_size, pixel_size, "mm")

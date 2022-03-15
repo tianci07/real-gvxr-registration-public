@@ -36,7 +36,13 @@ def SSIM(y_true, y_pred):
         y_true: ground truth or target image
         y_pred: predicted image
     """
-    s = metrics.structural_similarity(y_true, y_pred, data_range=y_pred.max()-y_pred.min())
+    vmin = min(y_true.min(),y_pred.min())
+    vmax = max(y_true.max(),y_pred.max())
+    
+    s = metrics.structural_similarity(y_true, 
+                                      y_pred,
+                                      data_range=vmax-vmin
+                                     )
 
     if np.isnan(s)==True or np.isinf(s)==True:
         s = 0.
