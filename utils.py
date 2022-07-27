@@ -253,6 +253,19 @@ def updateLocalTransformationMatrixSet(anAngle,  aFinger):
         gvxr.scaleNode('node-Lit_Prox', 1, 1, anAngle[33])
         gvxr.scaleNode('node-Lit_Midd', 1, 1, anAngle[34])
         gvxr.scaleNode('node-Lit_Dist', 1, 1, anAngle[35])
+        
+        # 4 meta bones in palm 
+        gvxr.rotateNode('node-Ind_Meta', anAngle[36], 1, 0, 0)
+        gvxr.rotateNode('node-Ind_Meta', anAngle[37], 0, 1, 0)
+        
+        gvxr.rotateNode('node-Mid_Meta', anAngle[38], 1, 0, 0)
+        gvxr.rotateNode('node-Mid_Meta', anAngle[39], 0, 1, 0)
+        
+        gvxr.rotateNode('node-Thi_Meta', anAngle[40], 1, 0, 0)
+        gvxr.rotateNode('node-Thi_Meta', anAngle[41], 0, 1, 0)
+        
+        gvxr.rotateNode('node-Lit_Meta', anAngle[42], 1, 0, 0)
+        gvxr.rotateNode('node-Lit_Meta', anAngle[43], 0, 1, 0)
 
 def boneRotation(anAngle, aFinger):
     """
@@ -305,10 +318,10 @@ def computePredictedImage(aPrediction):
     
     if aPrediction.ndim >= 2:
         aPrediction = aPrediction[0,:]
-
-    number_of_angles = 36
+    
     number_of_distances = 2
-
+    number_of_angles = len(aPrediction)-number_of_distances
+    
     SOD = aPrediction[0]*aPrediction[1]
     SDD = aPrediction[1]
     SOD = np.float(SOD.item())
